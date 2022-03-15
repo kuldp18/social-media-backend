@@ -1,4 +1,4 @@
-const User = require('../models/user');
+const User = require('../models/User');
 
 exports.register = async (req, res) => {
   try {
@@ -19,7 +19,17 @@ exports.register = async (req, res) => {
       },
     });
 
-    res.status(201).json({ success: true, user });
+    const token = await user.generateToken();
+    const options = {
+      expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+    };
+    res.status(201).cookie('token', token, options).json({
+      success: true,
+      message: 'User created successfully',
+      user,
+      token,
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -48,9 +58,13 @@ exports.login = async (req, res) => {
     }
 
     const token = await user.generateToken();
-
-    res.status(200).cookie('token', token).json({
+    const options = {
+      expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+    };
+    res.status(200).cookie('token', token, options).json({
       success: true,
+      message: 'User logged in successfully',
       user,
       token,
     });
