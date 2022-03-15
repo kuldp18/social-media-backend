@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Please enter a name.'],
+    required: [true, 'Please enter a name'],
   },
   avatar: {
     public_id: String,
@@ -11,13 +11,13 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: [true, 'Please enter an email.'],
-    unique: [true, 'Given email already exists.'],
+    required: [true, 'Please enter an email'],
+    unique: [true, 'Given email already exists'],
   },
   password: {
     type: String,
-    required: [true, 'Please enter a password.'],
-    minlength: [6, 'Password must be atleast 6 characters long.'],
+    required: [true, 'Please enter a password'],
+    minlength: [6, 'Password must be atleast 6 characters long'],
     select: false,
   },
   posts: [
