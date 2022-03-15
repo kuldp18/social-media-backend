@@ -11,7 +11,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // routes
 const postRoutes = require('./routes/post');
+const userRoutes = require('./routes/user');
 
 // using routes
 app.use('/api', postRoutes);
+app.use('/api', userRoutes);
 module.exports = app;
