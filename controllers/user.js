@@ -73,6 +73,21 @@ exports.login = async (req, res) => {
   }
 };
 
+exports.logout = async (req, res) => {
+  try {
+    const options = {
+      expires: new Date(Date.now()),
+      httpOnly: true,
+    };
+    res.status(200).cookie('token', '', options).json({
+      success: true,
+      message: 'User logged out successfully',
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 exports.followAndUnfollowUser = async (req, res) => {
   try {
     const userToFollow = await User.findById(req.params.id);
