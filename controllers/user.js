@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const Post = require('../models/Post');
+const { sendEmail } = require('../middlewares/sendResetEmail');
+const crypto = require('crypto');
 
 exports.register = async (req, res) => {
   try {
@@ -275,6 +277,99 @@ exports.getAllUsers = async (req, res) => {
     res.status(200).json({
       success: true,
       users,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// forgot password
+exports.forgotPassword = async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+
+    if (!req.body.email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your email',
+      });
+    }
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    const resetPasswordToken = user.getResetPasswordToken();
+    await user.save();
+
+    const resetUrl = `${req.protocol}://${req.get(
+      'host'
+    )}/api/reset/password/${resetPasswordToken}`;
+
+    function capitalize(str) {
+      const lower = str.toLowerCase();
+      return str.charAt(0).toUpperCase() + lower.slice(1);
+    }
+
+    const resetMessage = `${capitalize(
+      user.name
+    )}, you are receiving this email because you (or someone else) has requested to reset your password. Reset your account password here: \n\n ${resetUrl}`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Reset Password',
+        message: resetMessage,
+      });
+      res.status(200).json({
+        success: true,
+        message: `Checkout your email ${user.email} to reset your password!`,
+      });
+    } catch (error) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save();
+      res.status(500).json({
+        success: false,
+        message: 'Error sending reset email, please try again',
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const resetPasswordToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpiry: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Password reset token is invalid or has expired',
+      });
+    }
+
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpiry = undefined;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Your password has been reset successfully',
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
