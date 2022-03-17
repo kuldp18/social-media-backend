@@ -201,3 +201,58 @@ exports.commentOnPost = async (req, res) => {
     });
   }
 };
+
+// delete comment
+exports.deleteComment = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: 'Post not found',
+      });
+    }
+
+    if (post.owner.toString() === req.user._id.toString()) {
+      //  post owner can delete all the comments
+
+      // comment id cannot be undefined
+      if (!req.body.commentId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Comment id is required',
+        });
+      }
+      post.comments.forEach((comment, index) => {
+        if (comment._id.toString() === req.body.commentId.toString()) {
+          return post.comments.splice(index, 1);
+        }
+      });
+
+      await post.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Selected Comment has been deleted successfully',
+      });
+    } else {
+      // post owner and comment owner are different
+      post.comments.forEach((comment, index) => {
+        if (comment.user.toString() === req.user._id.toString()) {
+          return post.comments.splice(index, 1);
+        }
+      });
+
+      await post.save();
+      return res.status(200).json({
+        success: true,
+        message: 'Your Comment has been deleted successfully',
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
